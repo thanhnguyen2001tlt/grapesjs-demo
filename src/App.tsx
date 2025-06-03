@@ -1,6 +1,7 @@
 import React, { useRef, useCallback } from 'react';
 import { Editor, grapesjs } from 'grapesjs';
 import GjsEditor from '@grapesjs/react';
+
 import blocksBasic from 'grapesjs-blocks-basic';
 import pluginForms from 'grapesjs-plugin-forms';
 import pluginCountdown from 'grapesjs-component-countdown';
@@ -21,6 +22,7 @@ export default function App() {
   const jsonInputRef = useRef<HTMLInputElement>(null);
   const htmlCssInputRef = useRef<HTMLInputElement>(null);
 
+  // Xử lý submit trong iframe
   const handleFormSubmit = async (e: Event) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
@@ -30,7 +32,6 @@ export default function App() {
 
     try {
       let res: Response;
-
       if (method === 'GET') {
         const params = new URLSearchParams();
         formData.forEach((value, key) => {
@@ -41,10 +42,7 @@ export default function App() {
         const url = `${action}?${params.toString()}`;
         res = await fetch(url, { method: 'GET' });
       } else {
-        res = await fetch(action, {
-          method,
-          body: formData,
-        });
+        res = await fetch(action, { method, body: formData });
       }
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -57,6 +55,7 @@ export default function App() {
     }
   };
 
+  // Khởi tạo editor và gắn sự kiện submit
   const handleEditor = useCallback((editor: Editor) => {
     editorRef.current = editor;
     editor.on('load', () => {
@@ -68,6 +67,7 @@ export default function App() {
     });
   }, []);
 
+  // Export JSON
   const exportJSON = () => {
     if (!editorRef.current) return;
     const data = editorRef.current.getProjectData();
@@ -81,6 +81,7 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  // Import JSON
   const importJSON = () => jsonInputRef.current?.click();
   const handleJSONChange: React.ChangeEventHandler<HTMLInputElement> = async e => {
     const file = e.target.files?.[0];
@@ -95,27 +96,48 @@ export default function App() {
     e.target.value = '';
   };
 
+  // Import HTML + CSS
   const importHtmlCss = () => htmlCssInputRef.current?.click();
-  const handleHtmlCssChange: React.ChangeEventHandler<HTMLInputElement> = async e => {
-    if (!editorRef.current) return;
-    const files = Array.from(e.target.files || []);
-    let html = '', css = '';
+ const handleHtmlCssChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  if (!editorRef.current) return;
+  const files = Array.from(e.target.files || []);
+  let html = '', css = '';
 
-    await Promise.all(
-      files.map(async file => {
-        const txt = await file.text();
-        if (file.name.endsWith('.html')) html = txt;
-        if (file.name.endsWith('.css')) css = txt;
-      })
-    );
+  // Đọc nội dung từ tất cả các file
+  await Promise.all(files.map(async (file) => {
+    const content = await file.text();
 
-    editorRef.current.DomComponents.clear();
-    editorRef.current.CssComposer.clear();
-    editorRef.current.setComponents(html);
-    editorRef.current.setStyle(css);
+    if (file.name.endsWith('.html')) {
+      html = content;
 
-    e.target.value = '';
-  };
+      // Tách CSS bên trong <style> nếu có
+      const styleMatch = content.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+      if (styleMatch) {
+        css += styleMatch[1]; // lấy CSS từ thẻ <style>
+      }
+
+      // Tách nội dung body
+      const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch) {
+        html = bodyMatch[1];
+      }
+    }
+
+    if (file.name.endsWith('.css')) {
+      css += content; // cộng dồn nếu có file CSS riêng
+    }
+  }));
+
+  // Dọn editor và gán nội dung mới
+  const editor = editorRef.current;
+  editor.DomComponents.clear();
+  editor.CssComposer.clear();
+  editor.setComponents(html, { avoidInlineStyle: false });
+  editor.setStyle(css);
+
+  e.target.value = '';
+};
+
 
   const buttonStyle: React.CSSProperties = {
     marginRight: 8,
