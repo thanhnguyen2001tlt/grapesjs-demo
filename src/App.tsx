@@ -1,5 +1,5 @@
 import React, { useRef, useCallback } from 'react';
-import { Editor, grapesjs } from 'grapesjs';
+import grapesjs, { Editor } from 'grapesjs';
 import GjsEditor from '@grapesjs/react';
 
 import blocksBasic from 'grapesjs-blocks-basic';
@@ -22,7 +22,6 @@ export default function App() {
   const jsonInputRef = useRef<HTMLInputElement>(null);
   const htmlCssInputRef = useRef<HTMLInputElement>(null);
 
-  // Xử lý submit trong iframe
   const handleFormSubmit = async (e: Event) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
@@ -55,7 +54,6 @@ export default function App() {
     }
   };
 
-  // Khởi tạo editor và gắn sự kiện submit
   const handleEditor = useCallback((editor: Editor) => {
     editorRef.current = editor;
     editor.on('load', () => {
@@ -67,7 +65,6 @@ export default function App() {
     });
   }, []);
 
-  // Export JSON
   const exportJSON = () => {
     if (!editorRef.current) return;
     const data = editorRef.current.getProjectData();
@@ -81,7 +78,6 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  // Import JSON
   const importJSON = () => jsonInputRef.current?.click();
   const handleJSONChange: React.ChangeEventHandler<HTMLInputElement> = async e => {
     const file = e.target.files?.[0];
@@ -96,27 +92,21 @@ export default function App() {
     e.target.value = '';
   };
 
-  // Import HTML + CSS
   const importHtmlCss = () => htmlCssInputRef.current?.click();
   const handleHtmlCssChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
     if (!editorRef.current) return;
     const files = Array.from(e.target.files || []);
     let html = '', css = '';
 
-    // Đọc nội dung từ tất cả các file
     await Promise.all(files.map(async (file) => {
       const content = await file.text();
 
       if (file.name.endsWith('.html')) {
         html = content;
-
-        // Tách CSS bên trong <style> nếu có
         const styleMatch = content.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
         if (styleMatch) {
-          css += styleMatch[1]; // lấy CSS từ thẻ <style>
+          css += styleMatch[1];
         }
-
-        // Tách nội dung body
         const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
         if (bodyMatch) {
           html = bodyMatch[1];
@@ -124,21 +114,18 @@ export default function App() {
       }
 
       if (file.name.endsWith('.css')) {
-        css += content; // cộng dồn nếu có file CSS riêng
+        css += content;
       }
     }));
 
-    // Dọn editor và gán nội dung mới
     const editor = editorRef.current;
     editor.DomComponents.clear();
     editor.CssComposer.clear();
     editor.setComponents(html);
-
     editor.setStyle(css);
 
     e.target.value = '';
   };
-
 
   const buttonStyle: React.CSSProperties = {
     marginRight: 8,
@@ -153,7 +140,6 @@ export default function App() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Toolbar */}
       <div style={{ padding: 8, background: '#f5f5f5', borderBottom: '1px solid #ddd' }}>
         <button style={buttonStyle} onClick={exportJSON}>Export JSON</button>
         <button style={buttonStyle} onClick={importJSON}>Import JSON</button>
@@ -175,7 +161,6 @@ export default function App() {
         />
       </div>
 
-      {/* GrapesJS Editor */}
       <div style={{ flex: 1 }}>
         <GjsEditor
           grapesjs={grapesjs}
@@ -192,6 +177,7 @@ export default function App() {
             pluginNavbar,
             imageEditor,
             pluginTemplates,
+            
           ]}
           options={{ height: '100%', storageManager: false }}
           onEditor={handleEditor}
