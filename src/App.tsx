@@ -98,45 +98,46 @@ export default function App() {
 
   // Import HTML + CSS
   const importHtmlCss = () => htmlCssInputRef.current?.click();
- const handleHtmlCssChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
-  if (!editorRef.current) return;
-  const files = Array.from(e.target.files || []);
-  let html = '', css = '';
+  const handleHtmlCssChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    if (!editorRef.current) return;
+    const files = Array.from(e.target.files || []);
+    let html = '', css = '';
 
-  // Đọc nội dung từ tất cả các file
-  await Promise.all(files.map(async (file) => {
-    const content = await file.text();
+    // Đọc nội dung từ tất cả các file
+    await Promise.all(files.map(async (file) => {
+      const content = await file.text();
 
-    if (file.name.endsWith('.html')) {
-      html = content;
+      if (file.name.endsWith('.html')) {
+        html = content;
 
-      // Tách CSS bên trong <style> nếu có
-      const styleMatch = content.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-      if (styleMatch) {
-        css += styleMatch[1]; // lấy CSS từ thẻ <style>
+        // Tách CSS bên trong <style> nếu có
+        const styleMatch = content.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+        if (styleMatch) {
+          css += styleMatch[1]; // lấy CSS từ thẻ <style>
+        }
+
+        // Tách nội dung body
+        const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (bodyMatch) {
+          html = bodyMatch[1];
+        }
       }
 
-      // Tách nội dung body
-      const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      if (bodyMatch) {
-        html = bodyMatch[1];
+      if (file.name.endsWith('.css')) {
+        css += content; // cộng dồn nếu có file CSS riêng
       }
-    }
+    }));
 
-    if (file.name.endsWith('.css')) {
-      css += content; // cộng dồn nếu có file CSS riêng
-    }
-  }));
+    // Dọn editor và gán nội dung mới
+    const editor = editorRef.current;
+    editor.DomComponents.clear();
+    editor.CssComposer.clear();
+    editor.setComponents(html);
 
-  // Dọn editor và gán nội dung mới
-  const editor = editorRef.current;
-  editor.DomComponents.clear();
-  editor.CssComposer.clear();
-  editor.setComponents(html, { avoidInlineStyle: false });
-  editor.setStyle(css);
+    editor.setStyle(css);
 
-  e.target.value = '';
-};
+    e.target.value = '';
+  };
 
 
   const buttonStyle: React.CSSProperties = {
