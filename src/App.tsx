@@ -21,7 +21,6 @@ export default function App() {
   const jsonInputRef = useRef<HTMLInputElement>(null);
   const htmlCssInputRef = useRef<HTMLInputElement>(null);
 
-  // Xử lý submit form từ canvas, tôn trọng method trên <form>
   const handleFormSubmit = async (e: Event) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
@@ -49,17 +48,15 @@ export default function App() {
       }
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Giả sử response trả JSON
       const data = await res.json();
-      console.log('Form submit thành công:', data);
-      alert('Gửi form thành công!');
+      console.log('Form submitted successfully:', data);
+      alert('Form submitted successfully!');
     } catch (err) {
-      console.error('Lỗi khi gửi form:', err);
-      alert('Gửi form thất bại');
+      console.error('Error submitting form:', err);
+      alert('Form submission failed');
     }
   };
 
-  // Đăng ký listener khi editor load xong
   const handleEditor = useCallback((editor: Editor) => {
     editorRef.current = editor;
     editor.on('load', () => {
@@ -71,7 +68,6 @@ export default function App() {
     });
   }, []);
 
-  // --- Xuất JSON dự án ---
   const exportJSON = () => {
     if (!editorRef.current) return;
     const data = editorRef.current.getProjectData();
@@ -85,7 +81,6 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  // --- Nạp JSON ---
   const importJSON = () => jsonInputRef.current?.click();
   const handleJSONChange: React.ChangeEventHandler<HTMLInputElement> = async e => {
     const file = e.target.files?.[0];
@@ -95,12 +90,11 @@ export default function App() {
       const json = JSON.parse(text);
       editorRef.current.loadProjectData(json);
     } catch {
-      alert('Không phải file JSON hợp lệ');
+      alert('Invalid JSON file');
     }
     e.target.value = '';
   };
 
-  // --- Nạp HTML & CSS ---
   const importHtmlCss = () => htmlCssInputRef.current?.click();
   const handleHtmlCssChange: React.ChangeEventHandler<HTMLInputElement> = async e => {
     if (!editorRef.current) return;
@@ -123,13 +117,24 @@ export default function App() {
     e.target.value = '';
   };
 
+  const buttonStyle: React.CSSProperties = {
+    marginRight: 8,
+    padding: '6px 12px',
+    borderRadius: 4,
+    border: '1px solid #007bff',
+    backgroundColor: '#007bff',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: 14,
+  };
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Toolbar */}
       <div style={{ padding: 8, background: '#f5f5f5', borderBottom: '1px solid #ddd' }}>
-        <button onClick={exportJSON} style={{ marginRight: 8 }}>Xuất JSON</button>
-        <button onClick={importJSON} style={{ marginRight: 8 }}>Nạp JSON</button>
-        <button onClick={importHtmlCss}>Nạp HTML &amp; CSS</button>
+        <button style={buttonStyle} onClick={exportJSON}>Export JSON</button>
+        <button style={buttonStyle} onClick={importJSON}>Import JSON</button>
+        <button style={buttonStyle} onClick={importHtmlCss}>Import HTML & CSS</button>
         <input
           ref={jsonInputRef}
           type="file"
